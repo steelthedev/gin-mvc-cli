@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -11,7 +12,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-var choices = []string{"Create Gin", "Add to project"}
+var choices = []string{"Create new Gin", "Add controllers and routes"}
 
 type Model struct {
 	cursor      int
@@ -44,12 +45,12 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			if m.choice == choices[1] {
 				m.projectName.Blur()
-				// err := AddToExistingProject(m.projectName.Value())
-				// if err != nil {
-				// 	fmt.Println(err)
-				// 	return m, tea.Quit
-				// }
-				fmt.Println("Your project " + m.projectName.Value() + "is ready!")
+				err := AddToExistingProject(m.projectName.Value())
+				if err != nil {
+					fmt.Println(err)
+					return m, tea.Quit
+				}
+				fmt.Println("Your app " + m.projectName.Value() + "is ready!")
 				return m, tea.Quit
 			}
 			m.choice = choices[m.cursor]
@@ -262,6 +263,9 @@ func createMainFile(projectName string) error {
 		
 
 		dbHandler := db.Init()
+
+		/* Routes and controllers */
+
 		` + projectName + `Controller := controllers.New` + capitalizeFirstLetter(projectName) + `Controller(dbHandler)
 
 		routes.Register` + capitalizeFirstLetter(projectName) + `Routes(router, ` + projectName + `Controller)
@@ -306,7 +310,7 @@ func createDefaultController(projectName string) error {
 		})
 	}`
 
-	err := ioutil.WriteFile(projectName+"/app/controllers/"+projectName+"_controllers.go", []byte(defaultController), 0644)
+	err := ioutil.WriteFile(projectName+"/app/controllers/controllers.go", []byte(defaultController), 0644)
 	if err != nil {
 		return err
 	}
@@ -338,7 +342,7 @@ func createModelFile(projectName string) error {
 	modelFile := `package models
 	
 	`
-	err := ioutil.WriteFile(projectName+"/app/models/"+projectName+"_models.go", []byte(modelFile), 0644)
+	err := ioutil.WriteFile(projectName+"/app/models/models.go", []byte(modelFile), 0644)
 	if err != nil {
 		return err
 	}
@@ -377,8 +381,92 @@ func capitalizeFirstLetter(word string) string {
 	return firstLetter + restOfWord
 }
 
-func AddToExistingProject(projectName string) error {
+func AddToExistingProject(appName string) error {
+	err := AddToController(appName)
+	if err != nil {
+		return err
+	}
+
+	err = AddToRoutes(appName)
+	if err != nil {
+		return err
+	}
 
 	return nil
+}
 
+func AddToController(appName string) error {
+
+	// write to controllers
+	filePath := "app/controllers/controllers.go"
+
+	// Open the file in append mode
+	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_APPEND, 0644)
+	if err != nil {
+		fmt.Printf("Error opening file: %s\n", err.Error())
+		return err
+	}
+	defer file.Close()
+
+	enterSpace := "\n\n"
+
+	controllerString := `
+
+	` + enterSpace + `
+
+	// ` + appName + ` controllers  
+	type ` + capitalizeFirstLetter(appName) + `Controller struct {
+		db *gorm.DB
+	}
+	
+	func New` + capitalizeFirstLetter(appName) + `Controller(db *gorm.DB) *` + capitalizeFirstLetter(appName) + `Controller {
+		return &` + capitalizeFirstLetter(appName) + `Controller{
+			db: db,
+		}
+	}
+	
+	func (nc *` + capitalizeFirstLetter(appName) + `Controller) ` + capitalizeFirstLetter(appName) + `(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"message":"A new controller for ` + appName + `",
+		})
+	}`
+	_, err = io.WriteString(file, controllerString)
+	if err != nil {
+		fmt.Printf("Error writing to file: %s\n", err.Error())
+		return err
+	}
+
+	return nil
+}
+
+func AddToRoutes(appName string) error {
+	// write to controllers
+	filePath := "app/routes/routes.go"
+
+	// Open the file in append mode
+	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_APPEND, 0644)
+	if err != nil {
+		fmt.Printf("Error opening file: %s\n", err.Error())
+		return err
+	}
+	defer file.Close()
+
+	enterSpace := "\n\n"
+
+	routesString := `
+
+	` + enterSpace + `
+		
+	func Register` + capitalizeFirstLetter(appName) + `Routes(r *gin.Engine, nc *controllers.` + capitalizeFirstLetter(appName) + `Controller) {
+		routes := r.Group("` + appName + `")
+		routes.GET("/", nc.` + capitalizeFirstLetter(appName) + `)
+	}`
+
+	_, err = io.WriteString(file, routesString)
+	if err != nil {
+		fmt.Printf("Error writing to file: %s\n", err.Error())
+		return err
+	}
+
+	return nil
 }
