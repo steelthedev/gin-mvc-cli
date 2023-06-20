@@ -58,8 +58,3 @@ Contributions are welcome! If you find any issues or have suggestions for improv
 
 This project is licensed under the [MIT License](LICENSE).
 
-## Demo
-
-Check out this short demo video hosted on Google Drive:
-
-<iframe src="https://drive.google.com/file/d/1kucMWvTEbB9ej0ZeQmnANQP8PZxNOptN/view" width="640" height="480" frameborder="0" allowfullscreen></iframe>
