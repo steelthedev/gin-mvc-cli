@@ -62,4 +62,4 @@ This project is licensed under the [MIT License](LICENSE).
 
 Check out this short demo video hosted on Google Drive:
 
-<iframe src="https://drive.google.com/file/d/1kucMWvTEbB9ej0ZeQmnANQP8PZxNOptN/view?usp=drive_link" width="640" height="480" frameborder="0" allowfullscreen></iframe>
+<iframe src="https://drive.google.com/file/d/1kucMWvTEbB9ej0ZeQmnANQP8PZxNOptN/view" width="640" height="480" frameborder="0" allowfullscreen></iframe>
