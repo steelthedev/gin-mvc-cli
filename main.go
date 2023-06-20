@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -20,6 +21,18 @@ type Model struct {
 	projectName textinput.Model
 }
 
+func validateAndFormatString(input string) (string, error) {
+	// Check if the string contains '/' or '-'
+	if strings.ContainsAny(input, "/-") {
+		return "", errors.New("string contains invalid characters")
+	}
+
+	// Remove spaces between words
+	formattedString := strings.Join(strings.Fields(input), "")
+
+	return formattedString, nil
+}
+
 func (m *Model) Init() tea.Cmd {
 	return nil
 }
@@ -34,7 +47,12 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "enter":
 			if m.choice == choices[0] {
 				m.projectName.Blur()
-				err := CreateFolderStructure(m.projectName.Value())
+				s, err := validateAndFormatString(m.projectName.Value())
+				if err != nil {
+					fmt.Println(err)
+					return m, tea.Quit
+				}
+				err = CreateFolderStructure(s)
 				if err != nil {
 					fmt.Println(err)
 					return m, tea.Quit
@@ -45,7 +63,12 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			if m.choice == choices[1] {
 				m.projectName.Blur()
-				err := AddToExistingProject(m.projectName.Value())
+				s, err := validateAndFormatString(m.projectName.Value())
+				if err != nil {
+					fmt.Println(err)
+					return m, tea.Quit
+				}
+				err = AddToExistingProject(s)
 				if err != nil {
 					fmt.Println(err)
 					return m, tea.Quit
