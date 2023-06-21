@@ -42,7 +42,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "ctrl+c", "q", "esc":
+		case "ctrl+c", "esc":
 			return m, tea.Quit
 		case "enter":
 			if m.choice == choices[0] {
@@ -77,18 +77,20 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, tea.Quit
 			}
 			m.choice = choices[m.cursor]
-		case "down", "j":
+		case "down":
 			m.cursor++
 			if m.cursor > len(choices) {
 				m.cursor = 0
 			}
-		case "up", "k":
+		case "up":
 			m.cursor--
 			if m.cursor < 0 {
 				m.cursor = len(choices) - 1
 			}
 		default:
-			m.projectName, _ = m.projectName.Update(msg)
+			if m.projectName.Focused() {
+				m.projectName, _ = m.projectName.Update(msg)
+			}
 
 		}
 
@@ -117,7 +119,7 @@ func (m *Model) View() string {
 		return m.projectName.View()
 	}
 	s := strings.Builder{}
-	s.WriteString("What kind of Bubble Tea would you like to order?\n\n")
+	s.WriteString("What do you want to do?\n\n")
 
 	for i := 0; i < len(choices); i++ {
 		if m.cursor == i {
@@ -128,7 +130,7 @@ func (m *Model) View() string {
 		s.WriteString(choices[i])
 		s.WriteString("\n")
 	}
-	s.WriteString("\n(press q to quit)\n")
+	s.WriteString("\n(press esc to quit)\n")
 
 	return s.String()
 }
