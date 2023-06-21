@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
@@ -248,7 +247,7 @@ func Init() *gorm.DB {
 }
 `
 
-	err := ioutil.WriteFile(projectName+"/connections/db/db.go", []byte(dbFile), 0644)
+	err := os.WriteFile(projectName+"/connections/db/db.go", []byte(dbFile), 0644)
 	if err != nil {
 		return err
 	}
@@ -297,7 +296,7 @@ func createMainFile(projectName string) error {
 		router.Run(":8000")
 	}`
 
-	err := ioutil.WriteFile(projectName+"/main.go", []byte(mainFile), 0644)
+	err := os.WriteFile(projectName+"/main.go", []byte(mainFile), 0644)
 	if err != nil {
 		return err
 	}
@@ -333,7 +332,7 @@ func createDefaultController(projectName string) error {
 		})
 	}`
 
-	err := ioutil.WriteFile(projectName+"/app/controllers/controllers.go", []byte(defaultController), 0644)
+	err := os.WriteFile(projectName+"/app/controllers/controllers.go", []byte(defaultController), 0644)
 	if err != nil {
 		return err
 	}
@@ -354,7 +353,7 @@ func createRouteFile(projectName string) error {
 		routes.GET("/", nc.` + capitalizeFirstLetter(projectName) + `)
 	}`
 
-	err := ioutil.WriteFile(projectName+"/app/routes/routes.go", []byte(routeFile), 0644)
+	err := os.WriteFile(projectName+"/app/routes/routes.go", []byte(routeFile), 0644)
 	if err != nil {
 		return err
 	}
@@ -365,7 +364,7 @@ func createModelFile(projectName string) error {
 	modelFile := `package models
 	
 	`
-	err := ioutil.WriteFile(projectName+"/app/models/models.go", []byte(modelFile), 0644)
+	err := os.WriteFile(projectName+"/app/models/models.go", []byte(modelFile), 0644)
 	if err != nil {
 		return err
 	}
