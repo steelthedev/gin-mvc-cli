@@ -3,16 +3,39 @@ package main
 import (
 	"errors"
 	"fmt"
-	"io"
+	"log"
 	"os"
 	"os/exec"
 	"strings"
 
+	"embed"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+	"text/template"
 )
 
+//go:embed templates/*
+var f embed.FS
+var templateEngine *template.Template
 var choices = []string{"Create new Gin", "Add controllers and routes"}
+
+func init() {
+	templateEngine = template.New("gin-mvc-cli-template-renderer")
+}
+
+func main() {
+	p := tea.NewProgram(&Model{
+		projectName: textinput.New(),
+	})
+
+	// Run returns the model as a tea.Model.
+	_, err := p.Run()
+	if err != nil {
+		fmt.Println("Oh no:", err)
+		os.Exit(1)
+	}
+
+}
 
 type Model struct {
 	cursor      int
@@ -132,20 +155,6 @@ func (m *Model) View() string {
 	return s.String()
 }
 
-func main() {
-	p := tea.NewProgram(&Model{
-		projectName: textinput.New(),
-	})
-
-	// Run returns the model as a tea.Model.
-	_, err := p.Run()
-	if err != nil {
-		fmt.Println("Oh no:", err)
-		os.Exit(1)
-	}
-
-}
-
 func CreateFolderStructure(projectName string) error {
 	// Create the main project folder
 	err := os.Mkdir(projectName, 0755)
@@ -221,154 +230,44 @@ func CreateFolderStructure(projectName string) error {
 }
 
 func createDbFile(projectName string) error {
-
-	dbFile := `
-	package db
-
-import (
-	"log"
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
-)
-
-func Init() *gorm.DB {
-	db, err := gorm.Open(sqlite.Open("` + projectName + `.db"), &gorm.Config{
-		DisableForeignKeyConstraintWhenMigrating: true,
-	})
-
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	// db.AutoMigrate(&models.` + projectName + `{})
-
-	return db
-
-}
-`
-
-	err := os.WriteFile(projectName+"/connections/db/db.go", []byte(dbFile), 0644)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return createFile(projectName+"/connections/db/db.go", os.O_RDWR|os.O_CREATE, "templates/db.txt", struct{ ProjectName string }{ProjectName: projectName})
 }
 
 func createMainFile(projectName string) error {
-	mainFile := `package main
-
-	import (
-		"net/http"	
-		"github.com/gin-gonic/gin"
-		"` + projectName + `/app/controllers"
-		"` + projectName + `/app/routes"
-		"` + projectName + `/connections/db"
-		"github.com/rs/cors"
-	)
-	
-	func main() {
-		router := gin.Default()
-	
-		router.GET("/", func(c *gin.Context) {
-			c.JSON(http.StatusOK, gin.H{"data": "Welcome to ` + projectName + `"})
-		})
-	
-		router.Use(func(c *gin.Context) {
-			cors.New(cors.Options{
-				AllowedOrigins: []string{"*"},
-				AllowedMethods: []string{"GET", "POST", "PUT", "DELETE"},
-				AllowedHeaders: []string{"Origin", "Content-Type", "Accept", "Authorization"},
-			}).ServeHTTP(c.Writer, c.Request, func(w http.ResponseWriter, r *http.Request) {
-			})
-		})
-		
-
-		dbHandler := db.Init()
-
-		/* Routes and controllers */
-
-		` + projectName + `Controller := controllers.New` + capitalizeFirstLetter(projectName) + `Controller(dbHandler)
-
-		routes.Register` + capitalizeFirstLetter(projectName) + `Routes(router, ` + projectName + `Controller)
-
-	
-		router.Run(":8000")
-	}`
-
-	err := os.WriteFile(projectName+"/main.go", []byte(mainFile), 0644)
-	if err != nil {
-		return err
+	data := struct {
+		ProjectName            string
+		ProjectNameCapitalized string
+	}{
+		ProjectName:            projectName,
+		ProjectNameCapitalized: capitalizeFirstLetter(projectName),
 	}
-
-	return nil
+	return createFile(projectName+"/main.go", os.O_RDWR|os.O_CREATE, "templates/main.txt", data)
 }
 
 func createDefaultController(projectName string) error {
-
-	defaultController := `package controllers
-
-	import (
-		"net/http"
-
-		"github.com/gin-gonic/gin"
-		"gorm.io/gorm"
-	
-	)
-	
-	type ` + capitalizeFirstLetter(projectName) + `Controller struct {
-		db *gorm.DB
+	data := struct {
+		ProjectName            string
+		ProjectNameCapitalized string
+	}{
+		ProjectName:            projectName,
+		ProjectNameCapitalized: capitalizeFirstLetter(projectName),
 	}
-	
-	func New` + capitalizeFirstLetter(projectName) + `Controller(db *gorm.DB) *` + capitalizeFirstLetter(projectName) + `Controller {
-		return &` + capitalizeFirstLetter(projectName) + `Controller{
-			db: db,
-		}
-	}
-	
-	func (nc *` + capitalizeFirstLetter(projectName) + `Controller) ` + capitalizeFirstLetter(projectName) + `(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"message":"A new controller for ` + projectName + `",
-		})
-	}`
-
-	err := os.WriteFile(projectName+"/app/controllers/controllers.go", []byte(defaultController), 0644)
-	if err != nil {
-		return err
-	}
-	return nil
+	return createFile(projectName+"/app/controllers/controllers.go", os.O_RDWR|os.O_CREATE, "templates/controller.txt", data)
 }
 
 func createRouteFile(projectName string) error {
-
-	routeFile := `package routes
-
-	import (
-		"github.com/gin-gonic/gin"
-		"` + projectName + `/app/controllers"
-	)
-	
-	func Register` + capitalizeFirstLetter(projectName) + `Routes(r *gin.Engine, nc *controllers.` + capitalizeFirstLetter(projectName) + `Controller) {
-		routes := r.Group("` + projectName + `")
-		routes.GET("/", nc.` + capitalizeFirstLetter(projectName) + `)
-	}`
-
-	err := os.WriteFile(projectName+"/app/routes/routes.go", []byte(routeFile), 0644)
-	if err != nil {
-		return err
+	data := struct {
+		ProjectName            string
+		ProjectNameCapitalized string
+	}{
+		ProjectName:            projectName,
+		ProjectNameCapitalized: capitalizeFirstLetter(projectName),
 	}
-	return nil
+	return createFile(projectName+"/app/routes/routes.go", os.O_RDWR|os.O_CREATE, "templates/routes.txt", data)
 }
 
 func createModelFile(projectName string) error {
-	modelFile := `package models
-	
-	`
-	err := os.WriteFile(projectName+"/app/models/models.go", []byte(modelFile), 0644)
-	if err != nil {
-		return err
-	}
-	return nil
+	return createFile(projectName+"/app/models/models.go", os.O_RDWR|os.O_CREATE, "templates/models.txt", nil)
 }
 
 func initializeProject(projectName string) error {
@@ -418,77 +317,45 @@ func AddToExistingProject(appName string) error {
 }
 
 func AddToController(appName string) error {
-
-	// write to controllers
-	filePath := "app/controllers/controllers.go"
-
-	// Open the file in append mode
-	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_APPEND, 0644)
-	if err != nil {
-		fmt.Printf("Error opening file: %s\n", err.Error())
-		return err
+	data := struct {
+		AppName            string
+		AppNameCapitalized string
+	}{
+		AppName:            appName,
+		AppNameCapitalized: capitalizeFirstLetter(appName),
 	}
-	defer file.Close()
-
-	enterSpace := "\n\n"
-
-	controllerString := `
-
-	` + enterSpace + `
-
-	// ` + appName + ` controllers  
-	type ` + capitalizeFirstLetter(appName) + `Controller struct {
-		db *gorm.DB
-	}
-	
-	func New` + capitalizeFirstLetter(appName) + `Controller(db *gorm.DB) *` + capitalizeFirstLetter(appName) + `Controller {
-		return &` + capitalizeFirstLetter(appName) + `Controller{
-			db: db,
-		}
-	}
-	
-	func (nc *` + capitalizeFirstLetter(appName) + `Controller) ` + capitalizeFirstLetter(appName) + `(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"message":"A new controller for ` + appName + `",
-		})
-	}`
-	_, err = io.WriteString(file, controllerString)
-	if err != nil {
-		fmt.Printf("Error writing to file: %s\n", err.Error())
-		return err
-	}
-
-	return nil
+	return createFile("app/controllers/controllers.go", os.O_WRONLY|os.O_APPEND, "templates/add_controller.txt", data)
 }
 
 func AddToRoutes(appName string) error {
-	// write to controllers
-	filePath := "app/routes/routes.go"
+	data := struct {
+		AppName            string
+		AppNameCapitalized string
+	}{
+		AppName:            appName,
+		AppNameCapitalized: capitalizeFirstLetter(appName),
+	}
+	return createFile("app/routes/routes.go", os.O_WRONLY|os.O_APPEND, "templates/add_router.txt", data)
+}
 
-	// Open the file in append mode
-	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_APPEND, 0644)
+func createFile(fileName string, flag int, template string, templateData interface{}) error {
+	file, err := os.OpenFile(fileName, flag, 0755)
 	if err != nil {
-		fmt.Printf("Error opening file: %s\n", err.Error())
 		return err
 	}
-	defer file.Close()
-
-	enterSpace := "\n\n"
-
-	routesString := `
-
-	` + enterSpace + `
-		
-	func Register` + capitalizeFirstLetter(appName) + `Routes(r *gin.Engine, nc *controllers.` + capitalizeFirstLetter(appName) + `Controller) {
-		routes := r.Group("` + appName + `")
-		routes.GET("/", nc.` + capitalizeFirstLetter(appName) + `)
-	}`
-
-	_, err = io.WriteString(file, routesString)
+	defer func() {
+		if err := file.Close(); err != nil {
+			log.Println(err)
+		}
+	}()
+	content, err := f.ReadFile(template)
 	if err != nil {
-		fmt.Printf("Error writing to file: %s\n", err.Error())
 		return err
 	}
-
-	return nil
+	fileTemplate, err := templateEngine.Parse(string(content))
+	if err != nil {
+		return err
+	}
+	err = fileTemplate.Execute(file, templateData)
+	return err
 }

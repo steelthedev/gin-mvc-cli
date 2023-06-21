@@ -1,0 +1,22 @@
+package db
+
+import (
+	"log"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
+)
+
+func Init() *gorm.DB {
+	db, err := gorm.Open(sqlite.Open("` + {{.ProjectName}} + `.db"), &gorm.Config{
+		DisableForeignKeyConstraintWhenMigrating: true,
+	})
+
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	// db.AutoMigrate(&models.` + {{.ProjectName}} + `{})
+
+	return db
+
+}

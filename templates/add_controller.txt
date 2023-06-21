@@ -1,0 +1,18 @@
+
+
+// {{.AppName}} controllers
+type {{.AppNameCapitalized}}Controller struct {
+    db *gorm.DB
+}
+
+func New{{.AppNameCapitalized}}Controller(db *gorm.DB) *{{.AppNameCapitalized}}Controller {
+    return &{{.AppNameCapitalized}}Controller{
+        db: db,
+    }
+}
+
+func (nc *{{.AppNameCapitalized}}Controller) {{.AppNameCapitalized}}(c *gin.Context) {
+    c.JSON(http.StatusOK, gin.H{
+        "message":"A new controller for {{.AppName}}",
+    })
+}

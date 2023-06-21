@@ -1,0 +1,6 @@
+
+
+func Register{{.AppNameCapitalized}}Routes(r *gin.Engine, nc *controllers.{{.AppNameCapitalized}}Controller) {
+    routes := r.Group("{{.AppName}}")
+    routes.GET("/", nc.{{.AppNameCapitalized}})
+}
