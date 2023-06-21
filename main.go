@@ -72,7 +72,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					fmt.Println(err)
 					return m, tea.Quit
 				}
-				fmt.Println("Your app " + m.projectName.Value() + "is ready!")
+				fmt.Println("Your app " + m.projectName.Value() + " is ready!")
 				return m, tea.Quit
 			}
 			m.choice = choices[m.cursor]
