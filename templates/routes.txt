@@ -1,0 +1,11 @@
+package routes
+
+import (
+    "github.com/gin-gonic/gin"
+    "{{.ProjectName}}/app/controllers"
+)
+
+func Register{{.ProjectNameCapitalized}}Routes(r *gin.Engine, nc *controllers.{{.ProjectNameCapitalized}}Controller) {
+    routes := r.Group("{{.ProjectName}}")
+    routes.GET("/", nc.{{.ProjectNameCapitalized}})
+}

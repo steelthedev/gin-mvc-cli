@@ -1,0 +1,39 @@
+package main
+
+import (
+	"net/http"
+	"github.com/gin-gonic/gin"
+	"{{.ProjectName}}/app/controllers"
+	"{{.ProjectName}}/app/routes"
+	"{{.ProjectName}}/connections/db"
+	"github.com/rs/cors"
+)
+
+func main() {
+	router := gin.Default()
+
+	router.GET("/", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"data": "Welcome to ` + projectName + `"})
+	})
+
+	router.Use(func(c *gin.Context) {
+		cors.New(cors.Options{
+			AllowedOrigins: []string{"*"},
+			AllowedMethods: []string{"GET", "POST", "PUT", "DELETE"},
+			AllowedHeaders: []string{"Origin", "Content-Type", "Accept", "Authorization"},
+		}).ServeHTTP(c.Writer, c.Request, func(w http.ResponseWriter, r *http.Request) {
+		})
+	})
+
+
+	dbHandler := db.Init()
+
+	/* Routes and controllers */
+
+	{{.ProjectName}}Controller := controllers.New{{.ProjectNameCapitalized}}Controller(dbHandler)
+
+	routes.Register{{.ProjectNameCapitalized}}Routes(router, {{.ProjectName}}Controller)
+
+
+	router.Run(":8000")
+}
