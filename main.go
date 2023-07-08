@@ -280,12 +280,14 @@ func initializeProject(projectName string) error {
 	}
 
 	cmd := exec.Command("go", "mod", "init", projectName)
+	fmt.Println("Initializing project", projectName)
 	err = cmd.Run()
 	if err != nil {
 		return err
 	}
 
 	cmd = exec.Command("go", "mod", "tidy")
+	fmt.Println("Downloading dependencies for project", projectName, "please wait...")
 	err = cmd.Run()
 	if err != nil {
 		return err
