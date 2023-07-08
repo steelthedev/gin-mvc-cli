@@ -9,9 +9,10 @@ import (
 	"strings"
 
 	"embed"
+	"text/template"
+
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
-	"text/template"
 )
 
 //go:embed templates/*
@@ -40,6 +41,7 @@ func main() {
 type Model struct {
 	cursor      int
 	choice      string
+	loaded      bool
 	projectName textinput.Model
 }
 
@@ -69,16 +71,20 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "enter":
 			if m.choice == choices[0] {
 				m.projectName.Blur()
+				m.loaded = true
 				s, err := validateAndFormatString(m.projectName.Value())
 				if err != nil {
 					fmt.Println(err)
 					return m, tea.Quit
 				}
+
 				err = CreateFolderStructure(s)
 				if err != nil {
 					fmt.Println(err)
 					return m, tea.Quit
 				}
+
+				m.loaded = false
 				fmt.Println("Your project " + m.projectName.Value() + " is ready!")
 				return m, tea.Quit
 			}
@@ -95,6 +101,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					fmt.Println(err)
 					return m, tea.Quit
 				}
+				m.loaded = true
 				fmt.Println("Your app " + m.projectName.Value() + " is ready!")
 				return m, tea.Quit
 			}
@@ -126,6 +133,10 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *Model) View() string {
+
+	if m.loaded {
+		fmt.Println("Loading...........")
+	}
 
 	if m.choice == choices[0] {
 
