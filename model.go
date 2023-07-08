@@ -73,10 +73,10 @@ func (g *GinMVCModel) handleKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return g, tea.Quit
 	case "enter":
 		if g.choice == TUIChoiceCreateNewGin {
-			g.handleTUIChoiceCreateNewGin()
+			return g.handleTUIChoiceCreateNewGin()
 		}
 		if g.choice == TUIChoiceAddControllersAndRoutes {
-			g.handleTUIChoiceAddControllersAndRoutes()
+			return g.handleTUIChoiceAddControllersAndRoutes()
 		}
 		g.setChoice()
 	case "down":
